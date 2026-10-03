@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MDev</title>
+<meta name="description" content="MDev: in-page developer tools. Console, DOM, storage and sources in floating windows.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f4f7;--surf:#fff;--surf2:#e8ecf2;--tx:#101725;--mut:#586277;--ln:#d3d9e3;--ac:#2c58f0;--acx:#fff;--ok:#0f9d63;--er:#d93a4a;--wn:#b97a00;--in:#2c58f0;
+--f:"IBM Plex Sans Arabic","Segoe UI",Tahoma,sans-serif;--m:"IBM Plex Mono",Consolas,monospace}
+[data-theme=dark]{--bg:#0d1420;--surf:#151f30;--surf2:#1d2a40;--tx:#e7ecf4;--mut:#93a0b8;--ln:#26344d;--ac:#6f95ff;--acx:#0d1420;--ok:#3ddc97;--er:#ff6b7a;--wn:#ffc14d;--in:#6f95ff}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{background:var(--bg);color:var(--tx);font:400 17px/1.8 var(--f);transition:background .35s,color .35s;overflow-x:hidden}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+.w{max-width:1120px;margin-inline:auto;padding-inline:24px}
+code,pre,.mono{font-family:var(--m)}
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--ln)}
+nav .w{display:flex;align-items:center;gap:20px;height:60px}
+.logo{font:600 20px var(--m);text-decoration:none;letter-spacing:-.5px;margin-inline-end:auto}
+.logo b{color:var(--ac)}
+.links{display:flex;gap:20px;font-size:15px}
+.links a{text-decoration:none;color:var(--mut)}.links a:hover{color:var(--tx)}
+.btn{font:500 15px var(--f);border:1px solid var(--ln);background:var(--surf);color:var(--tx);padding:7px 14px;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:border-color .2s,background .2s}
+.btn:hover{border-color:var(--ac)}
+.btn.p{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:600}
+.btn.sq{padding:7px 10px;min-width:38px;justify-content:center}
+@media(max-width:820px){.links{display:none}}
+/* sections */
+section{border-top:1px solid var(--ln);padding-block:84px}
+.grid{display:grid;grid-template-columns:230px 1fr;gap:48px}
+.grid>h2{font:600 15px var(--f);color:var(--mut);position:sticky;top:84px;align-self:start;padding-inline-start:14px;border-inline-start:3px solid var(--ac)}
+.grid>*{min-width:0}
+@media(max-width:820px){.grid{grid-template-columns:minmax(0,1fr);gap:24px}.grid>h2{position:static}section{padding-block:56px}}
+h3{font:600 clamp(26px,3.4vw,38px)/1.3 var(--f);margin-bottom:16px;letter-spacing:-.01em}
+p.l{color:var(--mut);max-width:62ch}
+/* hero */
+.hero{border:0;padding-block:64px 56px}
+.hero h1{font:700 clamp(38px,6.4vw,76px)/1.15 var(--f);letter-spacing:-.025em;max-width:15ch}
+.hero p{color:var(--mut);font-size:19px;max-width:56ch;margin-block:22px 30px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.cmd{display:inline-flex;align-items:center;gap:12px;margin-top:22px;font:400 14px var(--m);background:var(--surf);border:1px solid var(--ln);border-radius:6px;padding:8px 8px 8px 14px;direction:ltr}
+.cmd button{font:inherit;font-size:12px;background:var(--surf2);color:var(--tx);border:0;border-radius:4px;padding:4px 10px;cursor:pointer}
+.stage{position:relative;height:600px;margin-top:48px;border:1px solid var(--ln);border-radius:10px;background:var(--surf);overflow:hidden;direction:ltr;
+background-image:linear-gradient(var(--ln) 1px,transparent 1px),linear-gradient(90deg,var(--ln) 1px,transparent 1px);background-size:32px 32px;background-position:-1px -1px}
+.stage .bar{position:absolute;inset:0 0 auto;height:34px;background:var(--surf2);border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:6px;padding-inline:12px;font:12px var(--m);color:var(--mut);z-index:3}
+.bar i{width:10px;height:10px;border-radius:50%;background:var(--ln)}
+.dock{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:8px;background:var(--surf2);border:1px solid var(--ln);border-radius:12px;z-index:20}
+.dock button{width:42px;height:42px;border-radius:9px;border:1px solid var(--ln);background:var(--surf);color:var(--tx);font:500 16px var(--m);cursor:pointer;transition:transform .15s,background .2s}
+.dock button:hover{transform:translateY(-3px)}
+.dock button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.win{position:absolute;background:var(--surf);border:1px solid var(--ln);border-radius:8px;box-shadow:0 14px 40px rgb(0 0 0/.25);overflow:hidden;font:13px/1.6 var(--m);direction:ltr;text-align:left}
+.stage .win,.gd .win{display:flex;flex-direction:column;touch-action:pan-y}.win .b{flex:1;overflow:auto}
+.stage .win{transition:opacity .3s,transform .45s cubic-bezier(.3,1.4,.5,1);z-index:5}
+.win.off{opacity:0;transform:scale(.88) translateY(16px);pointer-events:none}
+.win .t{display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--surf2);border-bottom:1px solid var(--ln);font-weight:500;cursor:grab;touch-action:none;user-select:none}
+.win .t::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--er);box-shadow:14px 0 0 var(--wn),28px 0 0 var(--ok);margin-inline-end:36px}
+.win .b{padding:10px 12px;min-height:110px}
+.ln{display:flex;gap:8px;white-space:nowrap;overflow:hidden}
+.ln s{text-decoration:none;flex:none;width:58px;font-size:11px;padding-inline:6px;border-radius:3px;text-align:center;align-self:center}
+.ln.ok s{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}
+.ln.er s{background:color-mix(in srgb,var(--er) 20%,transparent);color:var(--er)}
+.ln.wn s{background:color-mix(in srgb,var(--wn) 20%,transparent);color:var(--wn)}
+.ln.in s{background:color-mix(in srgb,var(--in) 20%,transparent);color:var(--in)}
+.tg{color:var(--ac)}.at{color:var(--wn)}.vl{color:var(--ok)}.dm{color:var(--mut)}
+.tb{width:100%;border-collapse:collapse}.tb td,.tb th{padding:3px 8px;text-align:left;border-bottom:1px solid var(--ln);font-weight:400}.tb th{color:var(--mut)}
+.src{display:grid;grid-template-columns:150px 1fr;gap:12px}.src ul{list-style:none;padding:0;border-inline-end:1px solid var(--ln)}.src li{padding:2px 4px}.src li.s{background:var(--surf2)}
+@media(max-width:720px){.stage{height:700px}.cmd{max-width:100%;font-size:12px}.src{grid-template-columns:1fr}.src ul{display:none}}
+/* facts */
+.facts{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--ln);border-radius:8px;margin-top:40px;background:var(--surf)}
+.facts div{padding:18px 20px;border-inline-start:1px solid var(--ln)}.facts div:first-child{border:0}
+.facts b{display:block;font:600 22px var(--m);direction:ltr;text-align:start}
+.facts span{color:var(--mut);font-size:14px}
+@media(max-width:720px){.facts{grid-template-columns:1fr 1fr}.facts div:nth-child(3){border-inline-start:0}.facts div:nth-child(n+3){border-top:1px solid var(--ln)}}
+/* overview */
+.pts{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:36px;border-top:1px solid var(--ln)}
+.pts div{padding:22px 0 0;padding-inline-end:24px}.pts h4{font:600 18px var(--f);margin-bottom:6px}.pts p{color:var(--mut);font-size:15.5px;line-height:1.75}
+@media(max-width:820px){.pts{grid-template-columns:1fr}}
+/* features */
+.feat{display:grid;grid-template-columns:1fr 1.15fr;gap:40px;align-items:center;padding-block:40px;border-top:1px solid var(--ln)}
+.feat:first-of-type{border:0;padding-top:12px}
+.feat:nth-of-type(even) .tx{order:2}
+.feat h4{font:600 24px var(--f);margin-bottom:8px}
+.feat ul{padding-inline-start:20px;color:var(--mut);font-size:15.5px;margin-top:10px}
+.feat .win{position:relative;box-shadow:none}
+@media(max-width:820px){.feat{grid-template-columns:1fr}.feat:nth-of-type(even) .tx{order:0}}
+/* steps */
+ol.st{list-style:none;padding:0;counter-reset:s;border-inline-start:1px solid var(--ln)}
+ol.st li{counter-increment:s;padding:0 28px 22px;position:relative;color:var(--mut)}
+ol.st li::before{content:counter(s);position:absolute;inset-inline-start:-13px;top:0;width:25px;height:25px;border-radius:50%;background:var(--ac);color:var(--acx);font:600 12px/25px var(--m);text-align:center}
+ol.st b{color:var(--tx);font-weight:600}
+/* code */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--ln)}
+.tabs button{font:500 14px var(--m);background:none;border:0;border-bottom:2px solid transparent;color:var(--mut);padding:10px 14px;cursor:pointer;margin-bottom:-1px}
+.tabs button.on{color:var(--tx);border-color:var(--ac)}
+.code{position:relative;background:var(--surf);border:1px solid var(--ln);border-top:0;border-radius:0 0 8px 8px;direction:ltr;text-align:left}
+.code pre{padding:18px 20px;overflow-x:auto;font-size:14px;line-height:1.75}
+.code .btn{position:absolute;top:10px;right:10px;font-size:12px;padding:4px 10px}
+.note{margin-top:14px;color:var(--mut);font-size:14.5px}
+table.fn{width:100%;border-collapse:collapse;margin-top:28px;font-size:15px}
+table.fn th,table.fn td{padding:10px 12px;text-align:start;border-bottom:1px solid var(--ln)}
+table.fn th{color:var(--mut);font-weight:500}
+table.fn td:first-child{font-family:var(--m);color:var(--ac);direction:ltr;text-align:left;white-space:nowrap}
+.scroll{overflow-x:auto}
+/* status */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.cols>div{border:1px solid var(--ln);border-radius:8px;padding:24px;background:var(--surf)}
+.cols h4{font:600 18px var(--f);margin-bottom:12px}
+.cols ul{padding-inline-start:20px;color:var(--mut);font-size:15.5px}.cols li{margin-bottom:4px}
+@media(max-width:820px){.cols{grid-template-columns:1fr}}
+/* faq */
+details{border-bottom:1px solid var(--ln);padding:16px 0}
+summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::after{content:"+";font:400 22px/1 var(--m);color:var(--ac);transition:transform .25s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--mut);margin-top:10px;max-width:62ch}
+footer{border-top:1px solid var(--ln);padding-block:36px;color:var(--mut);font-size:14.5px}
+footer .w{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center}
+footer a{text-decoration:none}footer a:hover{color:var(--tx)}
+footer .logo{margin-inline-end:auto;color:var(--tx)}
+
+.win .x{margin-inline-start:auto;width:22px;height:22px;border-radius:5px;display:grid;place-items:center;font:16px/1 var(--m);color:var(--mut);cursor:pointer}
+.win .x:hover{background:var(--er);color:#fff}
+.rz{position:absolute;right:0;bottom:0;width:20px;height:20px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 52%,var(--mut) 52%,var(--mut) 60%,transparent 60%,transparent 74%,var(--mut) 74%,var(--mut) 82%,transparent 82%)}
+.caps{display:grid;grid-template-columns:1fr 1fr;gap:0 48px;margin-top:28px}
+.caps>div,.wl>div{padding:18px 0;border-top:1px solid var(--ln)}
+.caps h4,.wl h4{font:600 18px var(--f);margin-bottom:4px}.caps p,.wl p{color:var(--mut);font-size:15.5px;line-height:1.75}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:start;margin-top:26px}
+.gd{position:relative;height:320px;border:1px solid var(--ln);border-radius:10px;background:var(--surf);direction:ltr;overflow:hidden;background-image:linear-gradient(var(--ln) 1px,transparent 1px),linear-gradient(90deg,var(--ln) 1px,transparent 1px);background-size:32px 32px;animation:pan 14s linear infinite}
+.gd .win{left:8%;top:14%;width:46%;height:46%;animation:gd 8s ease-in-out infinite}
+.gd .rz{animation:pulse 1.6s ease-in-out infinite}
+.fg{position:absolute;width:28px;height:28px;border-radius:50%;background:var(--ac);opacity:0;animation:fg 8s ease-in-out infinite;z-index:4;box-shadow:0 0 0 8px color-mix(in srgb,var(--ac) 25%,transparent)}
+.fg.a{left:10%;top:34%}.fg.b2{right:10%;bottom:12%}
+@keyframes gd{0%{width:46%;height:46%;left:8%;top:14%}25%{width:80%;height:74%;left:8%;top:14%}50%{width:46%;height:46%;left:8%;top:14%}75%{width:46%;height:46%;left:48%;top:42%}100%{width:46%;height:46%;left:8%;top:14%}}
+@keyframes fg{0%,4%{opacity:0;scale:1}10%,22%{opacity:.7}26%{scale:1.15}46%{opacity:.7;scale:1}50%,56%{opacity:0}62%,72%{opacity:.7}90%,100%{opacity:0}}
+@keyframes pulse{50%{transform:scale(1.5)}}
+@keyframes pan{to{background-position:32px 32px}}
+@keyframes up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes ln{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.stage{animation:pan 16s linear infinite}
+.hero h1 span{display:inline-block;animation:up .8s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*80ms)}
+.hero .w>:not(h1){animation:up .9s cubic-bezier(.2,.8,.2,1) both}
+.hero .w>:nth-child(2){animation-delay:.35s}.hero .w>:nth-child(3){animation-delay:.45s}.hero .w>:nth-child(4){animation-delay:.55s}.hero .w>:nth-child(5){animation-delay:.7s}
+.js .rv{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1);transition-delay:var(--d,0ms)}
+.js .rv.in{opacity:1;transform:none}
+.js .grid>h2.rv{transform:translateX(14px)}[dir=rtl].js .grid>h2.rv,.js [dir=rtl] .grid>h2.rv{transform:translateX(-14px)}.js .grid>h2.rv.in{transform:none}
+.js .feat .win{opacity:0;transform:translateY(30px) scale(.95);transition:opacity .7s .2s,transform .8s .2s cubic-bezier(.3,1.3,.5,1)}
+.js .feat.in .win{opacity:1;transform:none}
+.feat.in .ln{animation:ln .5s both}.feat .ln:nth-child(1){animation-delay:.5s}.feat .ln:nth-child(2){animation-delay:.62s}.feat .ln:nth-child(3){animation-delay:.74s}.feat .ln:nth-child(4){animation-delay:.86s}.feat .ln:nth-child(5){animation-delay:.98s}
+ol.st li::before{transition:transform .5s cubic-bezier(.3,1.6,.5,1) var(--d,0ms)}.js ol.st li.rv:not(.in)::before{transform:scale(0)}
+.mail{font:600 clamp(20px,3.4vw,34px) var(--m);direction:ltr;display:inline-block;margin-top:8px;text-decoration:none;border-bottom:2px solid var(--ac);word-break:break-all}
+@media(max-width:820px){.caps,.two{grid-template-columns:1fr}.caps{gap:0}}
+
+.cv{padding-inline-start:66px;color:var(--mut);font-size:11.5px;padding-bottom:3px;margin-bottom:3px;border-bottom:1px dashed var(--ln)}
+.sb{background:var(--surf2);border:1px solid var(--ln);border-radius:6px;padding:4px 10px;color:var(--mut);font-size:11.5px;margin-bottom:8px}
+.sr{display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--ln);font-size:11.5px}.sr:last-child{border:0}
+.bd{background:var(--surf2);border:1px solid var(--ln);border-radius:5px;padding:0 6px;color:var(--ok);font-weight:500;font-size:10.5px}
+.tb td.tg{color:var(--ac)}.tb th{color:var(--ok)}
+.wh{position:absolute;left:12px;bottom:6px;font:10.5px var(--m);color:var(--ac);pointer-events:none}
+.feat .win .b{padding-bottom:28px}.feat .rz{pointer-events:none}.gd .b{overflow:hidden}
+.term{position:relative;overflow:hidden;direction:ltr;text-align:left;max-width:600px;margin-top:22px;background:var(--surf);border:1px solid var(--ln);border-radius:12px;padding:16px 18px;font:400 14px/1.9 var(--m);box-shadow:0 18px 50px -24px rgb(0 0 0/.5)}
+.term::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 40%,color-mix(in srgb,var(--tx) 7%,transparent) 50%,transparent 60%);background-size:200% 100%;animation:shim 5s linear infinite;pointer-events:none}
+.term .pr{color:var(--ac)}.term .copy{position:absolute;top:10px;right:10px;font-size:12px;padding:3px 10px;z-index:2}
+.cur{display:inline-block;width:9px;height:16px;background:var(--ac);vertical-align:-3px;animation:blink 1s steps(1) infinite}
+.hero{position:relative;overflow:hidden}.hero .w{position:relative;z-index:1}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;border:1px solid color-mix(in srgb,var(--ac) 28%,transparent);pointer-events:none}
+.hero::after{width:420px;height:420px;inset-inline-start:-170px;top:30px;box-shadow:0 0 0 40px color-mix(in srgb,var(--ac) 5%,transparent),0 0 0 80px color-mix(in srgb,var(--ac) 3%,transparent);animation:floaty 9s ease-in-out infinite}
+.hero::before{width:220px;height:220px;inset-inline-end:-60px;top:260px;animation:floaty 11s ease-in-out infinite reverse}
+.gest{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:44px}
+.gest>div{border-top:1px solid var(--ln);padding-top:18px;text-align:center}
+.gest b{display:block;font-weight:600}.gest span{color:var(--mut);font-size:14.5px}
+.sv{width:100%;max-width:200px;height:130px;margin:0 auto 8px;display:block;overflow:visible}
+.sv .w{fill:var(--surf);stroke:var(--ln)}.sv .h{fill:var(--surf2)}.sv .a{stroke:var(--ac);fill:none;stroke-width:2.4;stroke-linecap:round}.sv .dt{fill:var(--ac)}.sv .gh{fill:none;stroke:var(--ln);stroke-dasharray:4 4}
+.sv .f1{animation:p1 2.4s ease-in-out infinite}.sv .f2{animation:p2 2.4s ease-in-out infinite}
+.sv .hl{fill:var(--ac);opacity:.15;transform-box:fill-box;transform-origin:center;animation:pulse 1.6s ease-in-out infinite}
+.sv .mv{animation:mvw 3s ease-in-out infinite}
+@keyframes p1{50%{transform:translate(-14px,-6px)}}@keyframes p2{50%{transform:translate(14px,6px)}}
+@keyframes mvw{0%,15%{transform:translate(0,0)}60%,100%{transform:translate(-30px,-22px)}}
+@keyframes blink{50%{opacity:0}}@keyframes shim{to{background-position:-200% 0}}
+@keyframes floaty{50%{transform:translateY(-14px)}}
+@media(max-width:820px){.gest{grid-template-columns:1fr}}
+.feat .ln:nth-child(6){animation-delay:1.1s}.feat .ln:nth-child(7){animation-delay:1.22s}.feat .ln:nth-child(8){animation-delay:1.34s}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<nav><div class="w">
+<a class="logo" href="#top">M<b>Dev</b></a>
+<div class="links"><a href="#overview" data-i="n1"></a><a href="#capabilities" data-i="n2"></a><a href="#windows" data-i="n9"></a><a href="#download" data-i="n3"></a><a href="#usage" data-i="n4"></a><a href="#about" data-i="n5"></a><a href="#contact" data-i="n7"></a></div>
+<button class="btn sq" id="lang" aria-label="Language">EN</button>
+<button class="btn sq" id="theme" aria-label="Theme"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+</div></nav>
+
+<header class="hero" id="top"><div class="w">
+<h1 data-i="h1"></h1>
+<p data-i="h2"></p>
+<div class="cta">
+<a class="btn p" href="#download" data-i="c1"></a>
+<a class="btn" href="https://github.com/moo-m/MDev" target="_blank" rel="noopener">GitHub</a>
+<a class="btn" href="https://www.npmjs.com/package/@mahmodalkhazalah/mdev" target="_blank" rel="noopener">npm</a>
+</div>
+<div class="term"><button class="btn copy" data-copy="npm i @mahmodalkhazalah/mdev" data-i="cp"></button>
+<div><span class="pr">$</span> npm i @mahmodalkhazalah/mdev</div>
+<div><span class="pr">&gt;</span> green("MDev is ready") <span class="dm">// success</span></div>
+<div><span class="pr">&gt;</span> blue({ route: "/dashboard", loaded: true }) <span class="dm">// info</span></div>
+<div><span class="pr">&gt;</span> <span class="cur"></span></div></div>
+
+<div class="stage" id="stage" aria-label="MDev demo">
+<div class="bar"><i></i><i></i><i></i><span>&nbsp;localhost:3000</span></div>
+<div class="win off" id="w-console" style="left:3%;top:50px;width:min(430px,92%)"><div class="t">Console</div><div class="b" id="live"></div></div>
+<div class="win off" id="w-elements" style="left:3%;top:228px;width:min(400px,92%)"><div class="t">Elements</div><div class="b" data-app="elements"></div></div>
+<div class="win off" id="w-application" style="left:56%;top:50px;width:min(380px,92%)"><div class="t">Application</div><div class="b" data-app="application"></div></div>
+<div class="win off" id="w-sources" style="left:56%;top:296px;width:min(400px,92%)"><div class="t">Sources</div><div class="b" data-app="sources"></div></div>
+<div class="dock" id="dock"><button data-w="console" title="Console">c</button><button data-w="elements" title="Elements">e</button><button data-w="application" title="Application">a</button><button data-w="sources" title="Sources">s</button></div>
+</div>
+
+</div></header>
+
+<section id="overview"><div class="w grid"><h2 data-i="n1"></h2><div>
+<h3 data-i="o1"></h3>
+<p class="l" data-i="o2"></p>
+<div class="pts">
+<div><h4 data-i="p1t"></h4><p data-i="p1"></p></div>
+<div><h4 data-i="p2t"></h4><p data-i="p2"></p></div>
+<div><h4 data-i="p3t"></h4><p data-i="p3"></p></div>
+</div></div></div></section>
+
+<section id="capabilities"><div class="w grid"><h2 data-i="n2"></h2><div>
+<h3 data-i="cp1"></h3>
+<p class="l" data-i="cp2"></p>
+<div class="caps" id="caps"></div>
+</div></div></section>
+
+<section id="features"><div class="w grid"><h2 data-i="n8"></h2><div>
+<h3 data-i="ft"></h3>
+<div id="feats"></div>
+</div></div></section>
+
+<section id="windows"><div class="w grid"><h2 data-i="n9"></h2><div>
+<h3 data-i="w1"></h3>
+<p class="l" data-i="w2"></p>
+<div class="two">
+<div class="wl" id="wins"></div>
+<div>
+<div class="gd" aria-hidden="true"><div class="win"><div class="t">Console<span class="x">×</span></div><div class="b" data-app="console"></div><i class="rz"></i><span class="wh">drag corners · pinch to zoom</span><span class="fg a"></span><span class="fg b2"></span></div></div>
+<p class="note" data-i="w3"></p>
+</div></div>
+<div class="gest"><div><svg class="sv" viewBox="0 0 200 140" aria-hidden="true"><rect class="w" x="30" y="30" width="140" height="80" rx="10"/><path class="h" d="M30 40a10 10 0 0 1 10-10h120a10 10 0 0 1 10 10v8H30z"/><g class="a"><path d="M70 95C55 95 50 80 55 70"/><path d="M130 95C145 95 150 80 145 70"/><path d="M70 45C55 45 50 60 55 70"/><path d="M130 45C145 45 150 60 145 70"/></g><circle class="dt f1" cx="55" cy="70" r="6"/><circle class="dt f2" cx="145" cy="70" r="6"/></svg><b data-i="g1"></b><span data-i="g1d"></span></div><div><svg class="sv" viewBox="0 0 200 140" aria-hidden="true"><rect class="w" x="30" y="30" width="140" height="80" rx="10"/><path class="h" d="M30 40a10 10 0 0 1 10-10h120a10 10 0 0 1 10 10v8H30z"/><circle class="hl" cx="158" cy="100" r="16"/><path class="a" d="M150 95L165 110M150 105L155 110M150 90L170 110"/></svg><b data-i="g2"></b><span data-i="g2d"></span></div><div><svg class="sv" viewBox="0 0 200 140" aria-hidden="true"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path class="dt" d="M0 0L8 4L0 8z"/></marker></defs><rect class="gh" x="20" y="18" width="120" height="70" rx="10"/><g class="mv"><rect class="w" x="55" y="45" width="120" height="70" rx="10"/><path class="h" d="M55 55a10 10 0 0 1 10-10h100a10 10 0 0 1 10 10v8H55z"/></g><path class="a" d="M62 60L36 38" stroke-dasharray="5 4" marker-end="url(#ar)"/></svg><b data-i="g3"></b><span data-i="g3d"></span></div></div>
+</div></div></section>
+
+<section id="how"><div class="w grid"><h2 data-i="hw"></h2><div>
+<h3 data-i="hw1"></h3>
+<ol class="st">
+<li data-i="s1"></li><li data-i="s2"></li><li data-i="s3"></li><li data-i="s4"></li><li data-i="s5"></li>
+</ol></div></div></section>
+
+<section id="download"><div class="w grid"><h2 data-i="n3"></h2><div>
+<h3 data-i="d1"></h3>
+<p class="l" data-i="d2" style="margin-bottom:24px"></p>
+<div class="tabs" id="dtabs"><button class="on" data-t="cdn">CDN</button><button data-t="npm">npm</button><button data-t="git">Git</button></div>
+<div class="code"><button class="btn" id="cpcode" data-i="cp"></button><pre id="dcode"></pre></div>
+<p class="note" data-i="d3"></p>
+</div></div></section>
+
+<section id="usage"><div class="w grid"><h2 data-i="n4"></h2><div>
+<h3 data-i="u1"></h3>
+<p class="l" data-i="u2"></p>
+<div class="code" style="border-top:1px solid var(--ln);border-radius:8px;margin-top:22px"><pre>green("Build finished");
+red("Request failed", { status: 500 });
+yellow("Cache is almost full");
+blue(window.location.href);
+test(items.length &gt; 0, items);
+
+time("render");
+/* ... */
+timeEnd("render");
+clear();</pre></div>
+<div class="scroll"><table class="fn"><thead><tr><th data-i="tf"></th><th data-i="tp"></th></tr></thead><tbody>
+<tr><td>green(…)</td><td data-i="t1"></td></tr>
+<tr><td>red(…)</td><td data-i="t2"></td></tr>
+<tr><td>yellow(…)</td><td data-i="t3"></td></tr>
+<tr><td>blue(…)</td><td data-i="t4"></td></tr>
+<tr><td>test(cond, …)</td><td data-i="t5"></td></tr>
+<tr><td>time / timeEnd</td><td data-i="t6"></td></tr>
+<tr><td>clear()</td><td data-i="t7"></td></tr>
+</tbody></table></div>
+<p class="note" data-i="u3"></p>
+</div></div></section>
+
+<section id="status"><div class="w grid"><h2 data-i="st"></h2><div>
+<h3 data-i="st1"></h3>
+<p class="l" data-i="st2" style="margin-bottom:24px"></p>
+<div class="cols">
+<div><h4 data-i="a1"></h4><ul id="ready"></ul></div>
+<div><h4 data-i="a2"></h4><ul id="road"></ul></div>
+</div></div></div></section>
+
+<section id="about"><div class="w grid"><h2 data-i="n5"></h2><div>
+<h3 data-i="ab1"></h3>
+<p class="l" data-i="ab2"></p>
+<p class="l" data-i="ab3" style="margin-top:14px"></p>
+<div class="cta" style="margin-top:26px">
+<a class="btn" href="https://github.com/moo-m/MDev/issues" target="_blank" rel="noopener" data-i="ab4"></a>
+<a class="btn" href="https://github.com/moo-m/MDev" target="_blank" rel="noopener" data-i="ab5"></a>
+</div></div></div></section>
+
+<section id="faq"><div class="w grid"><h2 data-i="n6"></h2><div id="faqs"></div></div></section>
+
+<section id="contact"><div class="w grid"><h2 data-i="n7"></h2><div>
+<h3 data-i="ct1"></h3>
+<p class="l" data-i="ct2"></p>
+<a class="mail" href="mailto:mahmodalkhazalah782@gmail.com">mahmodalkhazalah782@gmail.com</a>
+<div class="cta" style="margin-top:22px"><a class="btn p" href="mailto:mahmodalkhazalah782@gmail.com" data-i="ct3"></a><button class="btn" data-copy="mahmodalkhazalah782@gmail.com" data-i="cp"></button></div>
+</div></div></section>
+
+<footer><div class="w">
+<a class="logo" href="#top">M<b>Dev</b></a>
+<a href="https://github.com/moo-m/MDev" target="_blank" rel="noopener">GitHub</a>
+<a href="https://www.npmjs.com/package/@mahmodalkhazalah/mdev" target="_blank" rel="noopener">npm</a>
+<a href="mailto:mahmodalkhazalah782@gmail.com">mahmodalkhazalah782@gmail.com</a>
+<a href="#top" data-i="up"></a>
+</div></footer>
+
+<script>
+(()=>{
+document.documentElement.classList.add('js');
+const D={
+ar:{cp1:"كل ما تحتاجه لفحص الصفحة، في ملف واحد",cp2:"MDev أداة صغيرة بتصميم واضح، تجمع أهم أدوات المطوّر وتعمل في أي صفحة تفتحها.",
+cap:[{t:"أدوات متكاملة",d:"Console وElements وApplication وSources في شريط واحد، دون التنقل بين أدوات منفصلة."},{t:"بلا إطار عمل",d:"مبني بـ DOM API مباشرة، فلا اعتماديات ثقيلة تضاف إلى مشروعك."},{t:"معزول بالكامل",d:"يعمل داخل Shadow DOM، فلا تتعارض تنسيقاته مع تنسيقات موقعك."},{t:"تسجيل ملوّن",d:"دوال بسيطة مثل green وred تعرض الرسائل بلون يوضح حالتها."},{t:"فحص حيّ للصفحة",d:"شجرة DOM تتحدث تلقائيًا عند تغيّر السمات أو العناصر أو النصوص."},{t:"إدارة بيانات المتصفح",d:"عرض وتعديل localStorage وsessionStorage والكوكيز، واستعراض IndexedDB وCache."},{t:"مستعرض المصادر",d:"ابحث في ملفات الصفحة، وعاين النصوص والصور، وانسخ المحتوى أو نزّله."},{t:"مصمم للمس",d:"يعمل على الهاتف بإيماءات الإصبعين، ويناسب المتصفحات التي لا تملك أدوات مطوّر."},{t:"تثبيت بسطر واحد",d:"أضفه من CDN بسطر واحد، أو ثبّته من npm."},{t:"مفتوح المصدر",d:"الكود كله على GitHub، ويمكنك قراءته وتعديله والمساهمة فيه."}],
+w1:"تحكّم كامل بالنوافذ",w2:"كل تطبيق في MDev يفتح في نافذة مستقلة. تعمل بالفأرة وباللمس، وتناسب شاشة الهاتف.",
+win:[{t:"تغيير الحجم",d:"اسحب الزاوية اليمنى السفلية لتكبير النافذة أو تصغيرها. وعلى الشاشة اللمسية اقرص بإصبعين للتصغير، وباعد بينهما للتكبير."},{t:"التحريك",d:"اسحب النافذة بإصبعين لنقلها إلى أي مكان في الشاشة."},{t:"الإظهار والإخفاء",d:"اضغط أيقونة التطبيق في الدوك لإظهار نافذته أو إخفائها، فتبقى حالتها كما هي."},{t:"الإغلاق",d:"اضغط × في أعلى يمين النافذة لإغلاقها. ويمكنك فتحها من جديد من الدوك."}],
+w3:"جرّب بنفسك في العرض أعلى الصفحة: اسحب النافذة من عنوانها، وغيّر حجمها من الزاوية، وأغلقها بـ ×.",
+g1:"القرص بإصبعين",g1d:"تصغير وتكبير النافذة",g2:"مقبض الزاوية",g2d:"أسفل يمين النافذة",g3:"السحب",g3d:"بإصبعين أو من شريط العنوان",ct1:"تواصل معنا",ct2:"لديك سؤال أو اقتراح أو وجدت خللًا؟ راسلنا على البريد التالي.",ct3:"إرسال رسالة",n7:"تواصل",n8:"التطبيقات",n9:"النوافذ",
+n1:"لمحة",n2:"الميزات",n3:"التنزيل",n4:"الاستخدام",n5:"من نحن",n6:"أسئلة شائعة",cp:"نسخ",up:"إلى الأعلى",
+h1:"أدوات المطوّر داخل صفحتك",
+h2:"لوحة عائمة تفحص الـ Console وشجرة DOM وتخزين المتصفح ومصادر الصفحة. تعمل على أي جهاز، بلا إطار عمل وبلا إضافة متصفح.",
+c1:"تنزيل MDev",f1:"لغة الكتابة",f2:"ملفًا في المصدر",f3:"سطرًا برمجيًا",f4:"عزل الواجهة",
+o1:"ما هو MDev؟",
+o2:"MDev نظام أدوات تطوير يُضاف إلى الصفحة نفسها. تحمّل ملفًا واحدًا فيظهر شريط أدوات صغير، ومنه تفتح نوافذ تعرض ما يحدث داخل الصفحة. مفيد عندما لا تتوفر أدوات المتصفح، كما في الهاتف أو المتصفحات المدمجة.",
+p1t:"بلا إطار عمل",p1:"الواجهة تُبنى مباشرة بـ DOM API، دون React أو Vue، فلا تضيف اعتماديات ثقيلة إلى مشروعك.",
+p2t:"معزول عن صفحتك",p2:"كل شيء يعمل داخل Shadow DOM، فلا تتأثر الأدوات بتنسيقات موقعك ولا يتأثر موقعك بتنسيقاتها.",
+p3t:"نوافذ عائمة",p3:"افتح التطبيقات التي تحتاجها فقط، وحرّكها وغيّر حجمها وأخفها وأغلقها متى شئت.",
+ft:"أربعة تطبيقات في شريط واحد",
+hw:"آلية العمل",hw1:"ماذا يحدث عند تحميل MDev",
+s1:"<b>تهيئة الحالة.</b> ينشئ المشروع الكائن <code>window.MDev</code>.",
+s2:"<b>عنصر مضيف.</b> يضيف عنصرًا إلى <code>document.body</code> ويربطه بـ Shadow Root.",
+s3:"<b>التنسيق والتسجيل.</b> يحمّل ملف CSS داخل الـ Shadow ويربط دوال التسجيل مثل <code>green</code> و<code>red</code>.",
+s4:"<b>الشريط.</b> يُنشئ شريط التطبيقات العائم.",
+s5:"<b>النوافذ.</b> كل ضغطة على تطبيق تفتح نافذة مستقلة، وضغطة ثانية تخفيها أو تُظهرها.",
+d1:"ابدأ في دقيقة",d2:"أسرع طريقة هي CDN: سطر واحد في صفحتك دون تثبيت أو بناء. وإن فضّلت يمكنك استخدام npm أو تنزيل المصدر من GitHub.",
+d3:"ملاحظة: عند التنزيل من GitHub شغّل ترجمة TypeScript أولًا ليظهر المجلد dist، فالمشروع لا يتضمن أمر build رسميًا بعد.",
+u1:"استخدمه من أول سطر",
+u2:"بعد تحميل MDev تصبح دوال التسجيل متاحة في أي مكان من كودك، وتظهر نتائجها ملوّنة في تطبيق Console.",
+tf:"الدالة",tp:"ما تفعله",
+t1:"رسالة نجاح بلون أخضر",t2:"رسالة خطأ بلون أحمر",t3:"تحذير بلون أصفر",t4:"معلومة بلون أزرق",
+t5:"تعرض البيانات فقط عند تحقق الشرط",t6:"تقيس الزمن بين نقطتين بحسب اسم التسمية",t7:"تمسح السجل المعروض والمخزّن",
+u3:"المشروع يضيف هذه الدوال أيضًا إلى Object.prototype، فيمكنك كتابة value.green(). انتبه لذلك إن كنت تستخدم مكتبات تعدّل النماذج الأصلية. وconsole.log الأصلي لا ينتقل تلقائيًا إلى MDev حاليًا.",
+st:"الحالة",st1:"ما يعمل اليوم وما هو قادم",st2:"نوضح حالة المشروع بصراحة: نواة قوية قابلة للاستخدام، وبعض الأجزاء ما زالت قيد التطوير.",
+a1:"جاهز الآن",a2:"قيد التطوير",
+ab1:"من نحن",
+ab2:"MDev مشروع مفتوح المصدر يطوّره moo-m. بدأ من حاجة بسيطة: فحص الصفحة وهي تعمل على الهاتف أو في بيئة لا تحتوي أدوات مطوّر.",
+ab3:"نبني الأداة بـ TypeScript صارم وبنية وحدات واضحة، ونوسّعها تطبيقًا بعد تطبيق. إن وجدت خللًا أو أردت ميزة، فاقتراحك مرحّب به.",
+ab4:"أبلغ عن مشكلة",ab5:"ساهم في المشروع",
+feats:[
+{k:"console",t:"Console",d:"سجّل ما يحدث في كودك برسائل ملوّنة حسب الحالة.",l:["تصفية: نجاح، خطأ، تحذير، معلومة، اختبار، وقت","تنسيق ذكي للكائنات والمصفوفات","فتح الكائن في نافذة مستقلة"]},
+{k:"elements",t:"Elements",d:"شجرة كاملة لعناصر الصفحة بسماتها ونصوصها.",l:["تتبع تغييرات الصفحة لحظيًا عبر MutationObserver","عرض الوسوم والسمات والتعليقات","تمييز الوسوم الفارغة والمغلقة ذاتيًا"]},
+{k:"application",t:"Application",d:"اقرأ وعدّل بيانات المتصفح الخاصة بموقعك.",l:["localStorage وsessionStorage: إضافة وتعديل وحذف وبحث","Cookies: إضافة وحذف ومسح","عرض IndexedDB وCache وService Workers"]},
+{k:"sources",t:"Sources",d:"استكشف كل ما تحمّله الصفحة من ملفات.",l:["مستند الصفحة والسكريبتات والأنماط والصور والخطوط","بحث بالاسم أو النوع أو الرابط","معاينة ونسخ وتنزيل المحتوى النصي"]}],
+ready:["Console بدوال تسجيل ملوّنة","فاحص DOM مع مراقبة التغييرات","إدارة localStorage وsessionStorage والكوكيز","استكشاف IndexedDB وCache وService Workers","مستعرض مصادر الصفحة","نوافذ عائمة معزولة بـ Shadow DOM"],
+road:["أمر build رسمي ينسخ ملفات CSS إلى dist","التحريك وتغيير الحجم بالفأرة عبر Pointer Events","تحرير IndexedDB من الواجهة","إدارة Cache وService Workers","اعتراض console الأصلي بشكل اختياري","اختبارات آلية وتوثيق محدّث"],
+faq:[["هل يعمل مع أي إطار عمل؟","نعم. MDev يبني واجهته بنفسه ولا يعتمد على إطار، لذا يعمل مع صفحات HTML العادية ومع React وVue وغيرهما."],
+["هل يؤثر على تنسيق موقعي؟","لا. الواجهة داخل Shadow DOM فتبقى تنسيقاتها معزولة عن الصفحة."],
+["هل أحتاج إلى حساب أو خادم؟","لا. هو ملف يُحمّل في الصفحة ويعمل في المتصفح بالكامل."],
+["هل يقرأ كل الكوكيز؟","يقرأ ما يسمح به المتصفح عبر document.cookie فقط. كوكيز HttpOnly لا يمكن الوصول إليها."],
+["لماذا تظهر بعض المصادر غير متاحة؟","قد يمنع المتصفح جلب ملفات من نطاقات أخرى بسبب CORS، فتظهر عندها كغير متاحة."],
+["هل يصلح للإنتاج؟","الأنسب حاليًا بيئات التطوير والاختبار. المشروع في نضج مبكر وننصح بإبقائه خارج النسخة النهائية لموقعك."]]},
+en:{cp1:"Everything you need to inspect a page, in one file",cp2:"MDev is a small tool with a clear design. It gathers the key developer tools and works on any page you open.",
+cap:[{t:"Integrated tools",d:"Console, Elements, Application and Sources in one dock, with no jumping between separate tools."},{t:"No framework",d:"Built directly on the DOM API, so no heavy dependencies are added to your project."},{t:"Fully isolated",d:"Runs inside a Shadow DOM, so its styles never clash with your site's styles."},{t:"Color-coded logging",d:"Simple helpers such as green and red show messages in a color that signals their status."},{t:"Live page inspection",d:"The DOM tree updates by itself when attributes, elements or text change."},{t:"Browser data management",d:"View and edit localStorage, sessionStorage and cookies, and browse IndexedDB and Cache."},{t:"Sources explorer",d:"Search the page's files, preview text and images, and copy or download content."},{t:"Built for touch",d:"Works on phones with two-finger gestures, and suits browsers that have no developer tools."},{t:"One-line setup",d:"Add it from a CDN with one line, or install it from npm."},{t:"Open source",d:"All the code is on GitHub. Read it, change it, contribute to it."}],
+w1:"Full control over windows",w2:"Each MDev app opens in its own window. They work with a mouse or touch and fit a phone screen.",
+win:[{t:"Resize",d:"Drag the bottom-right corner to make a window bigger or smaller. On a touch screen, pinch with two fingers to shrink and spread them to enlarge."},{t:"Move",d:"Drag a window with two fingers to place it anywhere on screen."},{t:"Show and hide",d:"Tap an app icon in the dock to show or hide its window. Its state stays as you left it."},{t:"Close",d:"Tap × at the top right of the window to close it. Reopen it any time from the dock."}],
+w3:"Try it in the demo at the top of the page: drag a window by its title, resize it from the corner, and close it with ×.",
+g1:"Two-finger pinch",g1d:"Shrink or enlarge a window",g2:"Corner handle",g2d:"Bottom-right of the window",g3:"Drag",g3d:"With two fingers or by the title bar",ct1:"Get in touch",ct2:"Have a question, a suggestion, or found a bug? Write to us at the address below.",ct3:"Send a message",n7:"Contact",n8:"Apps",n9:"Windows",
+n1:"Overview",n2:"Features",n3:"Download",n4:"Usage",n5:"About",n6:"FAQ",cp:"Copy",up:"Back to top",
+h1:"Developer tools, inside your page",
+h2:"A floating panel that inspects the console, the DOM tree, browser storage and page sources. Works on any device, with no framework and no browser extension.",
+c1:"Download MDev",f1:"Written in",f2:"source files",f3:"lines of code",f4:"UI isolation",
+o1:"What is MDev?",
+o2:"MDev is a developer toolkit that lives in the page itself. Load one file and a small dock appears. From it you open windows that show what the page is doing. It helps where browser devtools are missing, such as phones and embedded browsers.",
+p1t:"No framework",p1:"The UI is built directly with the DOM API. No React or Vue, so nothing heavy is added to your project.",
+p2t:"Isolated from your page",p2:"Everything runs inside a Shadow DOM. Your site's CSS can't break the tools, and the tools can't break your site.",
+p3t:"Floating windows",p3:"Open only the apps you need. Move, resize, hide and close them whenever you like.",
+ft:"Four apps in one dock",
+hw:"How it works",hw1:"What happens when MDev loads",
+s1:"<b>Set up state.</b> The project creates the <code>window.MDev</code> object.",
+s2:"<b>Host element.</b> It adds an element to <code>document.body</code> and attaches a Shadow Root.",
+s3:"<b>Styles and logging.</b> It loads CSS inside the shadow tree and binds logging helpers such as <code>green</code> and <code>red</code>.",
+s4:"<b>Dock.</b> It builds the floating app bar.",
+s5:"<b>Windows.</b> Each app click opens its own window. Click again to hide or show it.",
+d1:"Start in a minute",d2:"The fastest way is the CDN: one line in your page, with no install or build. You can also use npm or download the source from GitHub.",
+d3:"Note: when installing from GitHub, compile the TypeScript first so the dist folder exists. The project has no official build script yet.",
+u1:"Use it from the first line",
+u2:"Once MDev is loaded, the logging helpers are available anywhere in your code, and their output shows up color-coded in the Console app.",
+tf:"Function",tp:"What it does",
+t1:"Success message, shown in green",t2:"Error message, shown in red",t3:"Warning, shown in yellow",t4:"Info, shown in blue",
+t5:"Shows the data only when the condition is true",t6:"Measures time between two points by label",t7:"Clears the displayed and stored log",
+u3:"The project also adds these helpers to Object.prototype, so value.green() works. Keep that in mind if you use libraries that touch native prototypes. The native console.log is not forwarded to MDev yet.",
+st:"Status",st1:"What works today and what's next",st2:"We're upfront about where the project stands: a solid, usable core, with some parts still in progress.",
+a1:"Ready now",a2:"In progress",
+ab1:"About us",
+ab2:"MDev is an open-source project developed by moo-m. It started from a simple need: inspecting a page while it runs on a phone or in an environment with no developer tools.",
+ab3:"We build it in strict TypeScript with a clear module structure, and grow it one app at a time. If you find a bug or want a feature, your suggestion is welcome.",
+ab4:"Report an issue",ab5:"Contribute",
+feats:[
+{k:"console",t:"Console",d:"Log what your code does with messages colored by status.",l:["Filters: success, error, warning, info, test, time","Smart formatting for objects and arrays","Open any object in its own window"]},
+{k:"elements",t:"Elements",d:"A full tree of the page elements with their attributes and text.",l:["Live updates through MutationObserver","Tags, attributes and comments","Void and self-closing tags are marked"]},
+{k:"application",t:"Application",d:"Read and edit the browser data that belongs to your site.",l:["localStorage and sessionStorage: add, edit, delete, search","Cookies: add, delete, clear","Browse IndexedDB, Cache and Service Workers"]},
+{k:"sources",t:"Sources",d:"Explore every file the page loads.",l:["Document, scripts, styles, images and fonts","Search by name, type or URL","Preview, copy and download text content"]}],
+ready:["Console with color-coded logging helpers","DOM inspector with change tracking","localStorage, sessionStorage and cookie management","IndexedDB, Cache and Service Worker browsing","Page sources explorer","Floating windows isolated by Shadow DOM"],
+road:["Official build script that copies CSS into dist","Mouse drag and resize through Pointer Events","IndexedDB editing from the UI","Cache and Service Worker management","Optional native console interception","Automated tests and updated docs"],
+faq:[["Does it work with any framework?","Yes. MDev builds its own UI and depends on no framework, so it works with plain HTML, React, Vue and others."],
+["Will it affect my site's styling?","No. The UI lives inside a Shadow DOM, so its styles stay separate from your page."],
+["Do I need an account or a server?","No. It's a file you load in the page, and it runs entirely in the browser."],
+["Does it read all cookies?","Only what the browser exposes through document.cookie. HttpOnly cookies can't be reached."],
+["Why are some sources unavailable?","The browser may block fetching files from other origins because of CORS, so they show as unavailable."],
+["Is it production-ready?","It's best suited to development and testing for now. The project is early in its maturity, so keep it out of your final production build."]]}
+};
+const CODE={
+cdn:"<script type=\"module\">\n  import 'https://cdn.jsdelivr.net/npm/@mahmodalkhazalah/mdev@1.0.0/MDev.js';\n<\/script>",
+npm:"npm i @mahmodalkhazalah/mdev\n\n// in your entry file\nimport \"@mahmodalkhazalah/mdev\";",
+git:"git clone https://github.com/moo-m/MDev.git\ncd MDev\nnpm install\nnpx tsc          # outputs to ./dist\nnpm start        # serves public/index.html"
+};
+/* mock apps */
+const L=(c,s,t)=>`<div class="ln ${c}"><s>${s}</s><span>${t}</span></div>`;
+const C=(c,s,a,v)=>L(c,s,a)+`<div class="cv">${v}</div>`;
+const tg=x=>`<span class="tg">&lt;${x}&gt;</span>`,at=x=>`<span class="at">${x}</span>`;
+const T=(n,h)=>`<div style="padding-inline-start:${n*14}px"><span class="dm">▾</span> ${h}</div>`;
+const SR=(b,n,z)=>`<div class="sr"><span class="bd">${b}</span><span style="flex:1">${n}</span><span class="dm">${z}</span></div>`;
+const LIVE=()=>L("ok","success","Build finished in 412ms")+L("in","info","http://localhost:3000/")+L("wn","warn","Cache is almost full")+L("er","error","Request failed {status: 500}")+L("in","time","render: 12.4ms");
+const HINT={console:"drag corners · pinch to zoom",elements:"live · MutationObserver",application:"localStorage · 4 items",sources:"preview · copy · download"};
+const APPS={
+console:()=>C("ok","success",'green("MDev is ready")','"MDev is ready"')+C("er","error",'red("Failed to load")','"Failed to load"')+C("in","info",'blue({ route: "/dashboard" })','▼ Object {1} — route: "/dashboard"')+C("wn","warn",'yellow("Check config")','"Check config"'),
+elements:()=>T(0,tg("html")+" "+at('lang="ar" dir="rtl"'))+T(1,tg("head"))+T(2,tg("meta")+" "+at('charset="UTF-8"'))+T(2,tg("title")+" MDev")+T(1,tg("body"))+T(2,tg("header")+" "+at('class="nav"'))+T(2,tg("main")+" "+at('id="top"'))+T(2,tg("footer")),
+application:()=>`<div class="sb">🔍 Search keys…</div><table class="tb"><tr><th>Key</th><th>Value</th></tr><tr><td class="tg">theme</td><td>"dark"</td></tr><tr><td class="tg">lang</td><td>"ar"</td></tr><tr><td class="tg">user_id</td><td>"u_24fa9c"</td></tr><tr><td class="tg">session</td><td>"active"</td></tr></table>`,
+sources:()=>`<div class="sb">🔍 Search sources…</div>`+SR("HTML","document","12.4 KB")+SR("JS","inline script #1","1.2 KB")+SR("JS","/assets/main.js","45 KB")+SR("CSS","/assets/style.css","8 KB")
+};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+let lang="ar",tab="cdn";
+const store=(k,v)=>{try{return v===undefined?localStorage.getItem(k):localStorage.setItem(k,v)}catch(e){}};
+function render(){
+const d=D[lang];
+document.documentElement.lang=lang;document.documentElement.dir=lang=="ar"?"rtl":"ltr";
+$("#lang").textContent=lang=="ar"?"EN":"ع";
+$$("[data-i]").forEach(e=>{const v=d[e.dataset.i];if(v!=null)e.innerHTML=v});
+$("h1").innerHTML=d.h1.split(" ").map((w,i)=>`<span style="--i:${i}">${w}</span> `).join("");
+$("#caps").innerHTML=d.cap.map(c=>`<div><h4>${c.t}</h4><p>${c.d}</p></div>`).join("");
+$("#wins").innerHTML=d.win.map(c=>`<div><h4>${c.t}</h4><p>${c.d}</p></div>`).join("");
+$("#feats").innerHTML=d.feats.map(f=>`<div class="feat"><div class="tx"><h4>${f.t}</h4><p class="l">${f.d}</p><ul>${f.l.map(x=>`<li>${x}</li>`).join("")}</ul></div><div class="win"><div class="t">${f.t}<span class="x">×</span></div><div class="b" data-app="${f.k}"></div><i class="rz"></i><span class="wh">${HINT[f.k]}</span></div></div>`).join("");
+$("#ready").innerHTML=d.ready.map(x=>`<li>${x}</li>`).join("");
+$("#road").innerHTML=d.road.map(x=>`<li>${x}</li>`).join("");
+$("#faqs").innerHTML=d.faq.map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join("");
+$$("[data-app]").forEach(e=>e.innerHTML=APPS[e.dataset.app]());
+$("#dcode").textContent=CODE[tab];
+liveInit();reveal();
+}
+/* reveal */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}}),{threshold:.12});
+function reveal(){let last=null,k=0;
+$$(".grid>h2,.grid>div>h3,.grid>div>.l,.pts>div,.gest>div,.caps>div,.wl>div,.gd,.feat,ol.st li,.cols>div,details,.mail,#contact .cta,#about .cta,.code,table.fn,.tabs,.note").forEach(el=>{
+const p=el.parentElement;if(p!==last){last=p;k=0}
+el.classList.add("rv");el.style.setProperty("--d",Math.min(k++,5)*70+"ms");io.observe(el)})}
+/* live console */
+const MSG=[["ok","success","Saved 3 items"],["in","info","route: /dashboard"],["er","error","TypeError: x is undefined"],["wn","warn","Slow request: 1.8s"],["ok","success","Service worker active"],["in","time","paint: 8.1ms"]];
+let li=0;
+function liveInit(){$("#live").innerHTML=LIVE();}
+setInterval(()=>{
+if(matchMedia("(prefers-reduced-motion:reduce)").matches||document.hidden)return;
+const b=$("#live");if(!b||$("#w-console").classList.contains("off"))return;
+const m=MSG[li++%MSG.length];b.insertAdjacentHTML("beforeend",L(m[0],m[1],m[2]));
+while(b.children.length>6)b.firstElementChild.remove();
+},1900);
+/* dock + drag */
+function setWin(n,on){$("#w-"+n).classList.toggle("off",!on);$(`#dock [data-w=${n}]`).classList.toggle("on",on)}
+$("#dock").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const n=b.dataset.w;setWin(n,$("#w-"+n).classList.contains("off"))});
+let z=10;
+$$(".stage .win").forEach(w=>{
+const t=w.querySelector(".t"),nm=w.id.slice(2);
+t.insertAdjacentHTML("beforeend",'<span class="x" role="button" aria-label="Close">×</span>');
+w.insertAdjacentHTML("beforeend",'<i class="rz"></i>');
+t.querySelector(".x").addEventListener("click",()=>setWin(nm,false));
+const rz=w.querySelector(".rz");
+rz.addEventListener("pointerdown",e=>{
+e.stopPropagation();const r=w.getBoundingClientRect(),st=$("#stage").getBoundingClientRect(),sx=e.clientX,sy=e.clientY;
+w.style.zIndex=++z;rz.setPointerCapture(e.pointerId);
+const mv=ev=>{w.style.width=Math.max(230,Math.min(st.right-r.left,r.width+ev.clientX-sx))+"px";w.style.height=Math.max(110,Math.min(st.bottom-r.top,r.height+ev.clientY-sy))+"px"};
+const up=()=>{rz.removeEventListener("pointermove",mv);rz.removeEventListener("pointerup",up)};
+rz.addEventListener("pointermove",mv);rz.addEventListener("pointerup",up)});
+let g=null;const pt=e=>{const a=e.touches[0],b=e.touches[1];return{x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2,d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}};
+w.addEventListener("touchstart",e=>{if(e.touches.length==2){g={...pt(e),l:w.offsetLeft,t:w.offsetTop,w:w.offsetWidth,h:w.offsetHeight};w.style.zIndex=++z;e.preventDefault()}},{passive:false});
+w.addEventListener("touchmove",e=>{if(!g||e.touches.length!=2)return;e.preventDefault();
+const p=pt(e),s=p.d/g.d,st=$("#stage"),W=Math.max(230,Math.min(st.clientWidth,g.w*s)),H=Math.max(110,Math.min(st.clientHeight-40,g.h*s));
+w.style.width=W+"px";w.style.height=H+"px";
+w.style.left=Math.max(0,Math.min(st.clientWidth-W,g.l+p.x-g.x))+"px";w.style.top=Math.max(34,Math.min(st.clientHeight-60,g.t+p.y-g.y))+"px"},{passive:false});
+w.addEventListener("touchend",e=>{if(e.touches.length<2)g=null});
+t.addEventListener("pointerdown",e=>{if(e.target.closest(".x"))return;
+const st=$("#stage").getBoundingClientRect(),r=w.getBoundingClientRect();
+const dx=e.clientX-r.left,dy=e.clientY-r.top;
+w.style.zIndex=++z;t.setPointerCapture(e.pointerId);t.style.cursor="grabbing";
+const mv=ev=>{
+w.style.left=Math.max(0,Math.min(st.width-r.width,ev.clientX-st.left-dx))+"px";
+w.style.top=Math.max(34,Math.min(st.height-60,ev.clientY-st.top-dy))+"px";};
+const up=()=>{t.style.cursor="";t.removeEventListener("pointermove",mv);t.removeEventListener("pointerup",up)};
+t.addEventListener("pointermove",mv);t.addEventListener("pointerup",up);});
+});
+if(innerWidth<720)[["console",44],["elements",190],["application",320],["sources",440]].forEach(([n,t])=>{const w=$("#w-"+n);w.style.left="4%";w.style.width="92%";w.style.top=t+"px"});
+/* opening sequence */
+["console","elements","application","sources"].forEach((n,i)=>setTimeout(()=>setWin(n,true),500+i*450));
+/* ui */
+$("#lang").onclick=()=>{lang=lang=="ar"?"en":"ar";store("mdev-lang",lang);render()};
+$("#theme").onclick=()=>{const h=document.documentElement;h.dataset.theme=h.dataset.theme=="dark"?"light":"dark";store("mdev-theme",h.dataset.theme)};
+$("#dtabs").onclick=e=>{const b=e.target.closest("button");if(!b)return;tab=b.dataset.t;$$("#dtabs button").forEach(x=>x.classList.toggle("on",x==b));$("#dcode").textContent=CODE[tab]};
+const copy=(txt,btn)=>{const o=btn.textContent;(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).catch(()=>{}).finally(()=>{btn.textContent="✓";setTimeout(()=>btn.textContent=o,1200)})};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-copy]");if(b)copy(b.dataset.copy,b)});
+$("#cpcode").onclick=e=>copy(CODE[tab],e.currentTarget);
+const sl=store("mdev-lang"),stt=store("mdev-theme");
+if(sl&&D[sl])lang=sl;
+document.documentElement.dataset.theme=stt||(matchMedia("(prefers-color-scheme:light)").matches?"light":"dark");
+render();
+})();
+</script>
+</body>
+</html>
